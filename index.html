@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Haftalık Ders ve Çalışma Takip Platformu</title>
+    <style>
+        :root {
+            --primary-color: #0d9488;
+            --primary-light: #ccfbf1;
+            --bg-color: #f8fafc;
+            --card-bg: #ffffff;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            --border-color: #e2e8f0;
+            
+            --color-green: #10b981;
+            --color-green-light: #ecfdf5;
+            --color-yellow: #f59e0b;
+            --color-yellow-light: #fffbeb;
+            --color-red: #ef4444;
+            --color-red-light: #fef2f2;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            padding: 15px;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            background: white;
+            padding: 12px 20px;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        h1 {
+            font-size: 1.3rem;
+            color: var(--primary-color);
+        }
+
+        /* Hafta Gezinme Alanı */
+        .week-nav {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: #f1f5f9;
+            padding: 5px 12px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .week-nav button {
+            background: white;
+            border: 1px solid var(--border-color);
+            padding: 4px 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+
+        .week-nav button:hover { background: var(--primary-light); }
+
+        .header-btns {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 8px 14px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.85rem;
+            transition: background 0.2s;
+        }
+
+        .btn:hover { background-color: #0f766e; }
+
+        .btn-outline {
+            background-color: transparent;
+            color: var(--primary-color);
+            border: 2px solid var(--primary-color);
+        }
+
+        .btn-outline:hover { background-color: var(--primary-light); }
+
+        /* Haftalık Konteyner (Sabit 7 Sütun) */
+        .week-container {
+            display: grid;
+            grid-template-columns: repeat(7, minmax(130px, 1fr));
+            gap: 10px;
+            overflow-x: auto;
+            padding-bottom: 10px;
+        }
+
+        .day-column {
+            background: white;
+            border-radius: 12px;
+            padding: 10px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            min-height: 500px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .day-header {
+            font-weight: bold;
+            text-align: center;
+            padding-bottom: 6px;
+            border-bottom: 2px solid var(--border-color);
+            margin-bottom: 10px;
+            font-size: 0.95rem;
+        }
+
+        .day-time {
+            font-size: 0.75rem;
+            color: var(--primary-color);
+            font-weight: bold;
+            margin-top: 2px;
+        }
+
+        /* Görev Kartları */
+        .task-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 8px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .task-card.status-green { border-left: 4px solid var(--color-green); background-color: var(--color-green-light); }
+        .task-card.status-yellow { border-left: 4px solid var(--color-yellow); background-color: var(--color-yellow-light); }
+        .task-card.status-red { border-left: 4px solid var(--color-red); background-color: var(--color-red-light); }
+
+        .task-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        }
+
+        .task-title {
+            font-weight: 600;
+            font-size: 0.85rem;
+            margin-bottom: 4px;
+        }
+
+        .task-book {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-bottom: 4px;
+        }
+
+        .task-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.7rem;
+            margin-top: 4px;
+            border-top: 1px dashed var(--border-color);
+            padding-top: 4px;
+        }
+
+        .badge-completed-tick {
+            background-color: rgba(16, 185, 129, 0.2);
+            color: var(--color-green);
+            padding: 1px 6px;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+
+        .badge-pending {
+            background-color: #f1f5f9;
+            color: var(--text-muted);
+            padding: 1px 6px;
+            border-radius: 4px;
+        }
+
+        .add-task-btn {
+            background: transparent;
+            border: 2px dashed var(--border-color);
+            color: var(--text-muted);
+            width: 100%;
+            padding: 6px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 0.8rem;
+            margin-top: auto;
+            transition: all 0.2s;
+        }
+
+        .add-task-btn:hover {
+            border-color: var(--primary-color);
+            color: var(--primary-color);
+            background: var(--primary-light);
+        }
+
+        /* Modal */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .modal {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            width: 450px;
+            max-width: 90%;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+            position: relative;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal h2 { margin-bottom: 12px; font-size: 1.1rem; }
+        .form-group { margin-bottom: 10px; }
+        .form-group label {
+            display: block;
+            font-size: 0.8rem;
+            font-weight: 600;
+            margin-bottom: 4px;
+            color: var(--text-muted);
+        }
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            font-size: 0.85rem;
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 15px; right: 15px;
+            background: none; border: none;
+            font-size: 1.2rem; cursor: pointer;
+            color: var(--text-muted);
+        }
+
+        .modal-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 8px;
+            margin-top: 15px;
+        }
+
+        .btn-secondary { background-color: #e2e8f0; color: var(--text-main); }
+
+        .list-item-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 6px 10px;
+            background: var(--bg-color);
+            border-radius: 6px;
+            margin-bottom: 4px;
+            font-size: 0.8rem;
+        }
+
+        .delete-btn { color: #ef4444; cursor: pointer; border: none; background: none; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>📚 Çalışma Takip Platformu</h1>
+        
+        <!-- Hafta Değiştirme Butonları -->
+        <div class="week-nav">
+            <button onclick="changeWeek(-1)">◀</button>
+            <span id="currentWeekDisplay">1. Hafta</span>
+            <button onclick="changeWeek(1)">▶</button>
+        </div>
+
+        <div class="header-btns">
+            <button class="btn btn-outline" onclick="openLibraryModal()">📖 Kütüphane</button>
+            <button class="btn" onclick="openAddModal()">+ Program Oluştur</button>
+        </div>
+    </header>
+
+    <div class="week-container" id="weekContainer"></div>
+
+    <!-- Kütüphane Modalı -->
+    <div class="modal-overlay" id="libraryModal">
+        <div class="modal">
+            <button class="modal-close" onclick="closeLibraryModal()">×</button>
+            <h2>📖 Kitap & Konu Kütüphanem</h2>
+            
+            <div style="margin-bottom: 15px; border-bottom: 1px solid var(--border-color); padding-bottom: 12px;">
+                <h3 style="font-size: 0.9rem; margin-bottom: 6px;">Yeni Kitap Ekle</h3>
+                <div style="display: flex; gap: 8px;">
+                    <input type="text" id="newBookInput" placeholder="Örn: Orijinal Matematik" style="flex:1; padding: 6px; border:1px solid var(--border-color); border-radius:6px;">
+                    <button class="btn" onclick="addNewBook()">Ekle</button>
+                </div>
+                <div id="bookListContainer" style="margin-top: 8px; max-height: 100px; overflow-y: auto;"></div>
+            </div>
+
+            <div>
+                <h3 style="font-size: 0.9rem; margin-bottom: 6px;">Yeni Konu Ekle</h3>
+                <div style="display: flex; gap: 6px; margin-bottom: 6px;">
+                    <input type="text" id="newTopicCategory" placeholder="Ders (Örn: TYT-Türkçe)" style="width: 35%; padding: 6px; border:1px solid var(--border-color); border-radius:6px;">
+                    <input type="text" id="newTopicTitle" placeholder="Konu (Örn: Paragraf)" style="flex:1; padding: 6px; border:1px solid var(--border-color); border-radius:6px;">
+                    <button class="btn" onclick="addNewTopic()">Ekle</button>
+                </div>
+                <div id="topicListContainer" style="max-height: 120px; overflow-y: auto;"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Program Oluşturma Modalı -->
+    <div class="modal-overlay" id="addModal">
+        <div class="modal">
+            <button class="modal-close" onclick="closeAddModal()">×</button>
+            <h2 id="addModalTitle">Programa Ders/Konu Ekle</h2>
+            <form id="taskForm" onsubmit="handleAddTask(event)">
+                <div class="form-group">
+                    <label>Hangi Gün?</label>
+                    <select id="taskDay" required>
+                        <option value="Pazartesi">Pazartesi</option>
+                        <option value="Salı">Salı</option>
+                        <option value="Çarşamba">Çarşamba</option>
+                        <option value="Perşembe">Perşembe</option>
+                        <option value="Cuma">Cuma</option>
+                        <option value="Cumartesi">Cumartesi</option>
+                        <option value="Pazar">Pazar</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Ders / Konu Adı</label>
+                    <input type="text" id="taskTitleInput" list="topicDataList" placeholder="Örn: TYT Paragraf" required>
+                    <datalist id="topicDataList"></datalist>
+                </div>
+
+                <div class="form-group">
+                    <label>Kaynak Kitap</label>
+                    <input type="text" id="taskBookInput" list="bookDataList" placeholder="Örn: Hız ve Renk" required>
+                    <datalist id="bookDataList"></datalist>
+                </div>
+
+                <div class="form-group">
+                    <label>Hedef Soru / Test Sayısı</label>
+                    <input type="number" id="taskTotal" placeholder="Örn: 10" required min="1">
+                </div>
+
+                <div class="form-group">
+                    <label>Tahmini Bitirilmesi Gereken Süre</label>
+                    <input type="text" id="taskEstTime" placeholder="Örn: 1 sa 15 dk" required>
+                </div>
+
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeAddModal()">İptal</button>
+                    <button type="submit" class="btn">Programıma Ekle</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Görev Detay Modalı -->
+    <div class="modal-overlay" id="detailModal">
+        <div class="modal">
+            <button class="modal-close" onclick="closeDetailModal()">×</button>
+            <h2 id="detailTitle">Konu Adı</h2>
+            <p id="detailCategoryBook" style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 12px;"></p>
+            
+            <div style="background: var(--bg-color); padding: 10px; border-radius: 8px; margin-bottom: 12px;">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 0.8rem;">
+                    <span>Çözülen Soru: <strong id="currentProgressText">0</strong> / <span id="totalGoalText">0</span></span>
+                    <span id="percentText" class="badge-pending">%0</span>
+                </div>
+                <input type="range" id="progressSlider" min="0" max="100" value="0" style="width: 100%; cursor: pointer;" oninput="updateSliderValue(this.value)">
+            </div>
+
+            <div class="form-group">
+                <label>Bu Görevi Ne Kadar Sürede Yaptın?</label>
+                <input type="text" id="taskActualTimeInput" placeholder="Örn: 1 sa 10 dk">
+            </div>
+
+            <button style="color: #ef4444; font-size: 0.8rem; background:none; border:none; cursor:pointer; margin-top:5px;" onclick="deleteCurrentTask()">🗑️ Bu görevi programdan kaldır</button>
+
+            <div class="modal-actions">
+                <button type="button" class="btn btn-secondary" onclick="closeDetailModal()">Kapat</button>
+                <button type="button" class="btn" onclick="saveTaskProgress()">Kaydet</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const days = ["Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi", "Pazar"];
+        
+        let currentWeek = 1; // Aktif Hafta
+        let myBooks = JSON.parse(localStorage.getItem('my_books')) || ["Hız ve Renk Türkçe", "11. Sınıf Orijinal Matematik"];
+        let myTopics = JSON.parse(localStorage.getItem('my_topics')) || [
+            { category: "TYT - Türkçe", title: "TYT Paragraf (Tümü)" }
+        ];
+
+        let tasks = JSON.parse(localStorage.getItem('study_tasks')) || [];
+        let activeTaskId = null;
+
+        function changeWeek(direction) {
+            currentWeek += direction;
+            if (currentWeek < 1) currentWeek = 1;
+            document.getElementById('currentWeekDisplayinnerText') || (document.getElementById('currentWeekDisplay').innerText = `${currentWeek}. Hafta`);
+            renderApp();
+        }
+
+        function parseDurationToMinutes(str) {
+            if (!str) return 0;
+            let totalMins = 0;
+            let saMatch = str.match(/(\d+)\s*sa/);
+            let dkMatch = str.match(/(\d+)\s*dk/);
+            if (saMatch) totalMins += parseInt(saMatch[1]) * 60;
+            if (dkMatch) totalMins += parseInt(dkMatch[1]);
+            if (!saMatch && !dkMatch && !isNaN(str)) totalMins += parseInt(str);
+            return totalMins;
+        }
+
+        function formatMinutesToReadable(totalMins) {
+            if (totalMins === 0) return "0 dk";
+            let sa = Math.floor(totalMins / 60);
+            let dk = totalMins % 60;
+            if (sa > 0 && dk > 0) return `${sa} sa ${dk} dk`;
+            if (sa > 0) return `${sa} sa`;
+            return `${dk} dk`;
+        }
+
+        function renderApp() {
+            document.getElementById('currentWeekDisplay').innerText = `${currentWeek}. Hafta`;
+            const container = document.getElementById('weekContainer');
+            container.innerHTML = '';
+
+            // Sadece o haftaya ait görevleri filtrele
+            const weekTasks = tasks.filter(t => (t.week || 1) === currentWeek);
+
+            days.forEach(day => {
+                const dayTasks = weekTasks.filter(t => t.day === day);
+                let totalMins = dayTasks.reduce((sum, t) => sum + parseDurationToMinutes(t.estTime), 0);
+                let formattedDayTime = formatMinutesToReadable(totalMins);
+
+                let columnHTML = `
+                    <div class="day-column">
+                        <div class="day-header">
+                            ${day}
+                            <div class="day-time">${formattedDayTime}</div>
+                        </div>
+                `;
+
+                dayTasks.forEach(task => {
+                    let statusClass = "status-red";
+                    let badgeHTML = `<span class="badge-pending">%0</span>`;
+
+                    if (task.completed >= task.total) {
+                        statusClass = "status-green";
+                        badgeHTML = `<span class="badge-completed-tick">✓ %100</span>`;
+                    } else if (task.completed > 0) {
+                        statusClass = "status-yellow";
+                        let percent = Math.round((task.completed / task.total) * 100);
+                        badgeHTML = `<span style="background:var(--color-yellow-light); color:var(--color-yellow); padding:1px 4px; border-radius:4px; font-weight:bold;">%${percent}</span>`;
+                    }
+
+                    columnHTML += `
+                        <div class="task-card ${statusClass}" onclick="openDetailModal(${task.id})">
+                            <div class="task-title">${task.title}</div>
+                            <div class="task-book">📖 ${task.book}</div>
+                            <div style="font-size: 0.7rem; color: var(--text-muted); margin-bottom: 4px;">⏱️ ${task.estTime}</div>
+                            <div class="task-footer">
+                                <span>Soru: ${task.total}</span>
+                                ${badgeHTML}
+                            </div>
+                        </div>
+                    `;
+                });
+
+                columnHTML += `
+                        <button class="add-task-btn" onclick="openAddModalForDay('${day}')">+ Görev Ekle</button>
+                    </div>
+                `;
+
+                container.innerHTML += columnHTML;
+            });
+        }
+
+        function openLibraryModal() { renderLibrary(); document.getElementById('libraryModal').style.display = 'flex'; }
+        function closeLibraryModal() { document.getElementById('libraryModal').style.display = 'none'; }
+        function renderLibrary() {
+            const bookContainer = document.getElementById('bookListContainer');
+            bookContainer.innerHTML = myBooks.length ? '' : '<p style="font-size:0.8rem; color:gray;">Kitap yok.</p>';
+            myBooks.forEach((book, index) => {
+                bookContainer.innerHTML += `<div class="list-item-row"><span>📖 ${book}</span><button class="delete-btn" onclick="removeBook(${index})">✕</button></div>`;
+            });
+
+            const topicContainer = document.getElementById('topicListContainer');
+            topicContainer.innerHTML = myTopics.length ? '' : '<p style="font-size:0.8rem; color:gray;">Konu yok.</p>';
+            myTopics.forEach((top, index) => {
+                topicContainer.innerHTML += `<div class="list-item-row"><span>📌 [${top.category}] ${top.title}</span><button class="delete-btn" onclick="removeTopic(${index})">✕</button></div>`;
+            });
+        }
+
+        function addNewBook() {
+            const input = document.getElementById('newBookInput');
+            if (input.value.trim()) { myBooks.push(input.value.trim()); localStorage.setItem('my_books', JSON.stringify(myBooks)); input.value = ''; renderLibrary(); }
+        }
+        function removeBook(index) { myBooks.splice(index, 1); localStorage.setItem('my_books', JSON.stringify(myBooks)); renderLibrary(); }
+        function addNewTopic() {
+            const cat = document.getElementById('newTopicCategory').value.trim();
+            const title = document.getElementById('newTopicTitle').value.trim();
+            if (cat && title) { myTopics.push({ category: cat, title: title }); localStorage.setItem('my_topics', JSON.stringify(myTopics)); document.getElementById('newTopicCategory').value = ''; document.getElementById('newTopicTitle').value = ''; renderLibrary(); }
+        }
+        function removeTopic(index) { myTopics.splice(index, 1); localStorage.setItem('my_topics', JSON.stringify(myTopics)); renderLibrary(); }
+
+        function openAddModal() {
+            document.getElementById('addModalTitle').innerText = `${currentWeek}. Hafta İçin Program Ekle`;
+            document.getElementById('topicDataList').innerHTML = myTopics.map(t => `<option value="[${t.category}] ${t.title}">`).join('');
+            document.getElementById('bookDataList').innerHTML = myBooks.map(b => `<option value="${b}">`).join('');
+            document.getElementById('addModal').style.display = 'flex';
+        }
+        function openAddModalForDay(day) { document.getElementById('taskDay').value = day; openAddModal(); }
+        function closeAddModal() { document.getElementById('addModal').style.display = 'none'; document.getElementById('taskForm').reset(); }
+
+        function handleAddTask(e) {
+            e.preventDefault();
+            const titleVal = document.getElementById('taskTitleInput').value.trim();
+            const bookVal = document.getElementById('taskBookInput').value.trim();
+            const estTimeVal = document.getElementById('taskEstTime').value.trim();
+
+            if (!titleVal || !bookVal || !estTimeVal) { alert("Lütfen tüm alanları doldurun!"); return; }
+
+            const newTask = {
+                id: Date.now(),
+                week: currentWeek, // Hangi haftaya eklendiyse kaydedilir
+                day: document.getElementById('taskDay').value,
+                title: titleVal,
+                book: bookVal,
+                total: parseInt(document.getElementById('taskTotal').value),
+                estTime: estTimeVal,
+                actualTime: "",
+                completed: 0
+            };
+
+            tasks.push(newTask);
+            saveAndRefresh();
+            closeAddModal();
+        }
+
+        function openDetailModal(id) {
+            activeTaskId = id;
+            const task = tasks.find(t => t.id === id);
+            if (!task) return;
+
+            document.getElementById('detailTitle').innerText = task.title;
+            document.getElementById('detailCategoryBook').innerText = `📖 ${task.book} | Tahmini: ${task.estTime}`;
+            document.getElementById('totalGoalText').innerText = task.total;
+            document.getElementById('currentProgressText').innerText = task.completed;
+            document.getElementById('taskActualTimeInput').value = task.actualTime || "";
+            
+            const slider = document.getElementById('progressSlider');
+            slider.max = task.total;
+            slider.value = task.completed;
+            
+            updateSliderValue(task.completed);
+            document.getElementById('detailModal').style.display = 'flex';
+        }
+
+        function closeDetailModal() { document.getElementById('detailModal').style.display = 'none'; activeTaskId = null; }
+
+        function updateSliderValue(val) {
+            document.getElementById('currentProgressText').innerText = val;
+            const task = tasks.find(t => t.id === activeTaskId);
+            if (task) {
+                const percent = Math.round((val / task.total) * 100);
+                const badge = document.getElementById('percentText');
+                badge.innerText = `%${percent}`;
+                if (val >= task.total) { badge.className = 'badge-completed-tick'; badge.innerText = '✓ %100'; }
+                else { badge.className = 'badge-pending'; }
+            }
+        }
+
+        function saveTaskProgress() {
+            const task = tasks.find(t => t.id === activeTaskId);
+            if (task) {
+                task.completed = parseInt(document.getElementById('progressSlider').value);
+                task.actualTime = document.getElementById('taskActualTimeInput').value.trim();
+                saveAndRefresh();
+            }
+            closeDetailModal();
+        }
+
+        function deleteCurrentTask() {
+            if (confirm("Bu görevi silmek istediğinize emin misiniz?")) {
+                tasks = tasks.filter(t => t.id !== activeTaskId);
+                saveAndRefresh();
+                closeDetailModal();
+            }
+        }
+
+        function saveAndRefresh() {
+            localStorage.setItem('study_tasks', JSON.stringify(tasks));
+            renderApp();
+        }
+
+        renderApp();
+    </script>
+</body>
+</html>
