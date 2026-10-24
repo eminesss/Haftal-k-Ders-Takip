@@ -57,7 +57,7 @@
         .week-nav {
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 8px;
             background: #f1f5f9;
             padding: 5px 12px;
             border-radius: 8px;
@@ -76,6 +76,24 @@
         }
 
         .week-nav button:hover { background: var(--primary-light); }
+
+        .week-title-input {
+            border: 1px solid transparent;
+            background: transparent;
+            font-weight: 600;
+            font-size: 0.9rem;
+            color: var(--text-main);
+            text-align: center;
+            padding: 2px 4px;
+            border-radius: 4px;
+            width: 150px;
+        }
+
+        .week-title-input:hover, .week-title-input:focus {
+            border-color: var(--border-color);
+            background: white;
+            outline: none;
+        }
 
         .header-btns {
             display: flex;
@@ -294,10 +312,10 @@
     <header>
         <h1>📚 Çalışma Takip Platformu</h1>
         
-        <!-- Hafta Değiştirme Butonları -->
+        <!-- Hafta Gezinme Alanı ve Düzenlenebilir Başlık -->
         <div class="week-nav">
             <button onclick="changeWeek(-1)">◀</button>
-            <span id="currentWeekDisplay">1. Hafta</span>
+            <input type="text" id="currentWeekInput" class="week-title-input" value="1. Hafta" oninput="updateWeekTitle(this.value)" placeholder="Hafta Adı / Tarih">
             <button onclick="changeWeek(1)">▶</button>
         </div>
 
@@ -392,6 +410,19 @@
             <h2 id="detailTitle">Konu Adı</h2>
             <p id="detailCategoryBook" style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 12px;"></p>
             
+            <div class="form-group">
+                <label>Günü Değiştir (Başka Güne Taşı)</label>
+                <select id="detailTaskDay">
+                    <option value="Pazartesi">Pazartesi</option>
+                    <option value="Salı">Salı</option>
+                    <option value="Çarşamba">Çarşamba</option>
+                    <option value="Perşembe">Perşembe</option>
+                    <option value="Cuma">Cuma</option>
+                    <option value="Cumartesi">Cumartesi</option>
+                    <option value="Pazar">Pazar</option>
+                </select>
+            </div>
+
             <div style="background: var(--bg-color); padding: 10px; border-radius: 8px; margin-bottom: 12px;">
                 <div style="display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 0.8rem;">
                     <span>Çözülen Soru: <strong id="currentProgressText">0</strong> / <span id="totalGoalText">0</span></span>
@@ -417,20 +448,25 @@
     <script>
         const days = ["Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi", "Pazar"];
         
-        let currentWeek = 1; // Aktif Hafta
+        let currentWeek = 1; 
         let myBooks = JSON.parse(localStorage.getItem('my_books')) || ["Hız ve Renk Türkçe", "11. Sınıf Orijinal Matematik"];
         let myTopics = JSON.parse(localStorage.getItem('my_topics')) || [
             { category: "TYT - Türkçe", title: "TYT Paragraf (Tümü)" }
         ];
 
         let tasks = JSON.parse(localStorage.getItem('study_tasks')) || [];
+        let weekTitles = JSON.parse(localStorage.getItem('week_titles')) || {};
         let activeTaskId = null;
 
         function changeWeek(direction) {
             currentWeek += direction;
             if (currentWeek < 1) currentWeek = 1;
-            document.getElementById('currentWeekDisplayinnerText') || (document.getElementById('currentWeekDisplay').innerText = `${currentWeek}. Hafta`);
             renderApp();
+        }
+
+        function updateWeekTitle(val) {
+            weekTitles[currentWeek] = val;
+            localStorage.setItem('week_titles', JSON.stringify(weekTitles));
         }
 
         function parseDurationToMinutes(str) {
@@ -454,11 +490,12 @@
         }
 
         function renderApp() {
-            document.getElementById('currentWeekDisplay').innerText = `${currentWeek}. Hafta`;
+            const weekInput = document.getElementById('currentWeekInput');
+            weekInput.value = weekTitles[currentWeek] || `${currentWeek}. Hafta`;
+
             const container = document.getElementById('weekContainer');
             container.innerHTML = '';
 
-            // Sadece o haftaya ait görevleri filtrele
             const weekTasks = tasks.filter(t => (t.week || 1) === currentWeek);
 
             days.forEach(day => {
@@ -538,7 +575,6 @@
         function removeTopic(index) { myTopics.splice(index, 1); localStorage.setItem('my_topics', JSON.stringify(myTopics)); renderLibrary(); }
 
         function openAddModal() {
-            document.getElementById('addModalTitle').innerText = `${currentWeek}. Hafta İçin Program Ekle`;
             document.getElementById('topicDataList').innerHTML = myTopics.map(t => `<option value="[${t.category}] ${t.title}">`).join('');
             document.getElementById('bookDataList').innerHTML = myBooks.map(b => `<option value="${b}">`).join('');
             document.getElementById('addModal').style.display = 'flex';
@@ -556,7 +592,7 @@
 
             const newTask = {
                 id: Date.now(),
-                week: currentWeek, // Hangi haftaya eklendiyse kaydedilir
+                week: currentWeek,
                 day: document.getElementById('taskDay').value,
                 title: titleVal,
                 book: bookVal,
@@ -578,6 +614,7 @@
 
             document.getElementById('detailTitle').innerText = task.title;
             document.getElementById('detailCategoryBook').innerText = `📖 ${task.book} | Tahmini: ${task.estTime}`;
+            document.getElementById('detailTaskDay').value = task.day;
             document.getElementById('totalGoalText').innerText = task.total;
             document.getElementById('currentProgressText').innerText = task.completed;
             document.getElementById('taskActualTimeInput').value = task.actualTime || "";
@@ -594,7 +631,7 @@
 
         function updateSliderValue(val) {
             document.getElementById('currentProgressText').innerText = val;
-            const task = tasks.find(t => t.id === activeTaskId);
+            const task = tasks.tasks ? null : tasks.find(t => t.id === activeTaskId);
             if (task) {
                 const percent = Math.round((val / task.total) * 100);
                 const badge = document.getElementById('percentText');
@@ -607,6 +644,7 @@
         function saveTaskProgress() {
             const task = tasks.find(t => t.id === activeTaskId);
             if (task) {
+                task.day = document.getElementById('detailTaskDay').value;
                 task.completed = parseInt(document.getElementById('progressSlider').value);
                 task.actualTime = document.getElementById('taskActualTimeInput').value.trim();
                 saveAndRefresh();
